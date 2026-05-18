@@ -7,7 +7,13 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-client = anthropic.Anthropic(api_key=os.getenv('CLAUDE_API_KEY'))
+_client = None
+
+def get_client():
+    global _client
+    if _client is None:
+        _client = anthropic.Anthropic(api_key=os.getenv('CLAUDE_API_KEY'))
+    return _client
 
 # System prompt especializado
 SYSTEM_PROMPT = """Eres un Coach de Carrera IA especializado en búsqueda de empleo en Chile y América Latina.
@@ -101,7 +107,7 @@ def chat_with_coach(user_id: int, message: str, tier: str) -> dict:
         })
         
         # Llamar a Claude API
-        response = client.messages.create(
+        response = get_client().messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=1200,
             system=SYSTEM_PROMPT,

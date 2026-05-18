@@ -41,8 +41,11 @@ def create_app():
     def internal_error(error):
         return {'error': 'Internal server error'}, 500
     
-    # Crear tablas
+    # Crear tablas (sin fallar si no hay conexión)
     with app.app_context():
-        db.create_all()
-    
+        try:
+            db.create_all()
+        except Exception as e:
+            print(f"Warning: Could not create database tables: {e}")
+
     return app
