@@ -1,0 +1,13 @@
+
+John Doe
+Senior Python Developer
+
+EXPERIENCE:
+- 5 years Python development
+- React and JavaScript
+- Django and Flask
+- PostgreSQL and MongoDB
+- AWS and Docker
+
+SKILLS:
+Python, JavaScript, React, Django, Flask, SQL, Git, Docker

@@ -1,0 +1,14 @@
+
+John Doe
+Full Stack Developer
+
+EXPERIENCE:
+- 3 años en Python (Django, FastAPI)
+- 4 años en JavaScript/React
+- SQL y MongoDB
+- Docker y AWS
+- Git, GitHub CI/CD
+
+SKILLS:
+Python, JavaScript, React, Node.js, Django, FastAPI, PostgreSQL, MongoDB,
+Docker, AWS, HTML, CSS, TypeScript, REST APIs
