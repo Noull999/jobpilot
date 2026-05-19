@@ -1,0 +1,575 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "last_updated": "2026-05-18",
+    "language": "es",
+    "country": "Chile",
+    "currency": "CLP"
+  },
+
+  "salary_ranges": {
+    "developer": {
+      "junior": {
+        "min": 800000,
+        "max": 1200000,
+        "avg": 1000000,
+        "notes": "0-2 años experiencia, bootcamp o técnico"
+      },
+      "mid": {
+        "min": 1300000,
+        "max": 2000000,
+        "avg": 1650000,
+        "notes": "2-5 años, experiencia comprobada"
+      },
+      "senior": {
+        "min": 2100000,
+        "max": 3500000,
+        "avg": 2800000,
+        "notes": "5+ años, liderazgo de proyectos"
+      }
+    },
+    "analyst_programmer": {
+      "junior": {
+        "min": 750000,
+        "max": 1100000,
+        "avg": 900000,
+        "notes": "Recién titulado técnico"
+      },
+      "mid": {
+        "min": 1200000,
+        "max": 1800000,
+        "avg": 1500000,
+        "notes": "2-4 años experiencia"
+      },
+      "senior": {
+        "min": 1900000,
+        "max": 3000000,
+        "avg": 2400000,
+        "notes": "Líder técnico, arquitectura"
+      }
+    },
+    "it_support": {
+      "level1": {
+        "min": 600000,
+        "max": 850000,
+        "avg": 720000,
+        "notes": "Soporte básico, helpdesk"
+      },
+      "level2": {
+        "min": 900000,
+        "max": 1300000,
+        "avg": 1100000,
+        "notes": "Diagnóstico avanzado, redes"
+      },
+      "level3": {
+        "min": 1400000,
+        "max": 2000000,
+        "avg": 1700000,
+        "notes": "Especialista, infraestructura"
+      }
+    },
+    "automation_engineer": {
+      "junior": {
+        "min": 900000,
+        "max": 1300000,
+        "avg": 1100000,
+        "notes": "PLC, TIA Portal, automatización básica"
+      },
+      "mid": {
+        "min": 1400000,
+        "max": 2100000,
+        "avg": 1750000,
+        "notes": "Múltiples plataformas, proyectos complejos"
+      },
+      "senior": {
+        "min": 2200000,
+        "max": 3500000,
+        "avg": 2800000,
+        "notes": "Diseño de sistemas, liderazgo técnico"
+      }
+    },
+    "fullstack": {
+      "junior": {
+        "min": 900000,
+        "max": 1400000,
+        "avg": 1150000,
+        "notes": "Frontend + Backend básico"
+      },
+      "mid": {
+        "min": 1500000,
+        "max": 2300000,
+        "avg": 1900000,
+        "notes": "Stacks modernas, DB avanzadas"
+      },
+      "senior": {
+        "min": 2400000,
+        "max": 4000000,
+        "avg": 3200000,
+        "notes": "Arquitectura, cloud, equipos"
+      }
+    }
+  },
+
+  "top_companies": {
+    "chile": [
+      {
+        "name": "Mercado Libre",
+        "industry": "E-commerce",
+        "size": "large",
+        "tech_stack": ["Python", "Java", "JavaScript", "Kubernetes", "AWS"],
+        "hiring_now": true,
+        "salary_level": "high",
+        "remote_friendly": true,
+        "locations": ["Santiago", "Remoto"],
+        "description": "Plataforma de comercio electrónico más grande de Latinoamérica"
+      },
+      {
+        "name": "Banco Falabella",
+        "industry": "Finance",
+        "size": "large",
+        "tech_stack": ["Java", "C#", "JavaScript", "Azure"],
+        "hiring_now": true,
+        "salary_level": "high",
+        "remote_friendly": false,
+        "locations": ["Santiago"],
+        "description": "Uno de los bancos más importantes de Chile"
+      },
+      {
+        "name": "Banco de Chile",
+        "industry": "Finance",
+        "size": "large",
+        "tech_stack": ["Java", "Python", "React", "AWS"],
+        "hiring_now": true,
+        "salary_level": "high",
+        "remote_friendly": true,
+        "locations": ["Santiago", "Remoto"],
+        "description": "Banco líder en transformación digital"
+      },
+      {
+        "name": "Cornershop",
+        "industry": "Tech/Logistics",
+        "size": "medium",
+        "tech_stack": ["JavaScript", "React", "Node.js", "Python", "GCP"],
+        "hiring_now": true,
+        "salary_level": "high",
+        "remote_friendly": true,
+        "locations": ["Santiago", "Remoto"],
+        "description": "Startup exitosa, ahora parte de Uber"
+      },
+      {
+        "name": "Everymind",
+        "industry": "Tech",
+        "size": "startup",
+        "tech_stack": ["JavaScript", "React", "Python", "Node.js"],
+        "hiring_now": true,
+        "salary_level": "mid",
+        "remote_friendly": true,
+        "locations": ["Remoto"],
+        "description": "Agencia tech que trabaja con startups y empresas"
+      },
+      {
+        "name": "Salmones Multiexport",
+        "industry": "Aquaculture",
+        "size": "large",
+        "tech_stack": ["Python", "Java", "SQL", "IoT"],
+        "hiring_now": true,
+        "salary_level": "mid",
+        "remote_friendly": false,
+        "locations": ["Puerto Montt", "Los Lagos"],
+        "description": "Líder en industria salmonera con modernización digital"
+      },
+      {
+        "name": "AquaChile",
+        "industry": "Aquaculture",
+        "size": "large",
+        "tech_stack": ["JavaScript", "Python", "SQL", "IoT"],
+        "hiring_now": true,
+        "salary_level": "mid",
+        "remote_friendly": false,
+        "locations": ["Puerto Montt", "Los Lagos"],
+        "description": "Empresa salmonera con inversión en tecnología"
+      },
+      {
+        "name": "Cermaq Chile",
+        "industry": "Aquaculture",
+        "size": "large",
+        "tech_stack": ["PLC Siemens", "SCADA", "Python", "IoT"],
+        "hiring_now": true,
+        "salary_level": "mid-high",
+        "remote_friendly": false,
+        "locations": ["Puerto Montt", "Los Lagos"],
+        "description": "Gigante mundial en acuicultura, busca automatización"
+      }
+    ],
+    "puerto_montt": [
+      {
+        "name": "Salmones Multiexport",
+        "industry": "Aquaculture",
+        "tech_roles": ["Desarrollador", "Analista Programador", "Ingeniero Automatización"],
+        "growth": "high"
+      },
+      {
+        "name": "AquaChile",
+        "industry": "Aquaculture",
+        "tech_roles": ["Backend Developer", "Soporte IT", "Analista"],
+        "growth": "high"
+      },
+      {
+        "name": "Cermaq Chile",
+        "industry": "Aquaculture",
+        "tech_roles": ["Ingeniero Automatización", "Técnico PLC", "Programador"],
+        "growth": "high"
+      },
+      {
+        "name": "Friosur",
+        "industry": "Food Processing",
+        "tech_roles": ["Soporte IT", "Técnico Informático"],
+        "growth": "medium"
+      },
+      {
+        "name": "Universidad San Sebastián",
+        "industry": "Education",
+        "tech_roles": ["Soporte Técnico", "Administrador de Sistemas"],
+        "growth": "medium"
+      },
+      {
+        "name": "Hospital Base de Puerto Montt",
+        "industry": "Healthcare",
+        "tech_roles": ["Soporte IT", "Administrador de Sistemas"],
+        "growth": "medium"
+      }
+    ]
+  },
+
+  "job_portals": {
+    "chile": [
+      {
+        "name": "Computrabajo",
+        "url": "https://www.computrabajo.cl",
+        "focus": "General, muy popular",
+        "pros": ["Más ofertas", "Fácil de usar"],
+        "cons": ["Spam ocasional"],
+        "ranking": 1,
+        "visited_monthly": "2M+"
+      },
+      {
+        "name": "Trabajando.com",
+        "url": "https://www.trabajando.com",
+        "focus": "Generalista, profesionales",
+        "pros": ["Buena reputación", "Filtros avanzados"],
+        "cons": ["Menos ofertas que Computrabajo"],
+        "ranking": 2,
+        "visited_monthly": "1M+"
+      },
+      {
+        "name": "LinkedIn Jobs",
+        "url": "https://www.linkedin.com/jobs",
+        "focus": "Profesionales, networking",
+        "pros": ["Networking", "Empresas grandes", "Creíble"],
+        "cons": ["Competencia alta"],
+        "ranking": 3,
+        "visited_monthly": "1.5M+"
+      },
+      {
+        "name": "Indeed",
+        "url": "https://www.indeed.com",
+        "focus": "Global, buenas ofertas",
+        "pros": ["Calidad de ofertas", "Remoto/Global"],
+        "cons": ["Competencia internacional"],
+        "ranking": 4,
+        "visited_monthly": "800K+"
+      },
+      {
+        "name": "Laborum",
+        "url": "https://www.laborum.cl",
+        "focus": "Especializado técnico",
+        "pros": ["Ofertas de calidad", "Técnicos"],
+        "cons": ["Menos volumen"],
+        "ranking": 5,
+        "visited_monthly": "300K+"
+      },
+      {
+        "name": "BNE - Bolsa Nacional de Empleo",
+        "url": "https://www.bne.cl",
+        "focus": "Institucional, público",
+        "pros": ["Empleos estables", "Oficial"],
+        "cons": ["Menos tech"],
+        "ranking": 6,
+        "visited_monthly": "200K+"
+      },
+      {
+        "name": "Getonboard",
+        "url": "https://www.getonboard.com",
+        "focus": "Startups, tech",
+        "pros": ["Ambiente startup", "Innovación"],
+        "cons": ["Menos estabilidad"],
+        "ranking": 7,
+        "visited_monthly": "150K+"
+      },
+      {
+        "name": "Angel List (Wellfound)",
+        "url": "https://wellfound.com",
+        "focus": "Startups globales",
+        "pros": ["Remoto 100%", "Global", "Equity"],
+        "cons": ["Altamente competitivo"],
+        "ranking": 8,
+        "visited_monthly": "200K+"
+      }
+    ]
+  },
+
+  "interview_types": {
+    "technical": {
+      "description": "Evaluación de habilidades técnicas",
+      "common_in": ["Developer", "Analista Programador", "Data Scientist"],
+      "duration_minutes": 60,
+      "typical_format": [
+        "Live coding o whiteboard",
+        "Preguntas sobre algoritmos",
+        "Debugging de código",
+        "Diseño de sistemas",
+        "SQL/Database queries"
+      ],
+      "preparation_tips": [
+        "Practica en LeetCode o HackerRank",
+        "Repasa conceptos de algoritmos",
+        "Prepara explicaciones de proyectos previos",
+        "Ten ejemplos de código listos",
+        "Estudia patrones de diseño"
+      ]
+    },
+    "behavioral": {
+      "description": "Evaluación de competencias blandas",
+      "common_in": ["Todos los roles"],
+      "duration_minutes": 45,
+      "typical_format": [
+        "Método STAR (Situation, Task, Action, Result)",
+        "Preguntas sobre trabajo en equipo",
+        "Resolución de conflictos",
+        "Motivación y carrera",
+        "Manejo de presión"
+      ],
+      "preparation_tips": [
+        "Prepara historias STAR con ejemplos reales",
+        "Practica en voz alta",
+        "Investiga la empresa y su cultura",
+        "Prepara preguntas sobre el rol",
+        "Sé auténtico pero profesional"
+      ]
+    },
+    "cultural_fit": {
+      "description": "Evaluación de alineación con valores empresa",
+      "common_in": ["Startups", "Empresas tech"],
+      "duration_minutes": 30,
+      "typical_format": [
+        "Conversación casual",
+        "Preguntas sobre valores",
+        "Discusión de proyectos",
+        "Fit con el equipo",
+        "Visión de carrera"
+      ],
+      "preparation_tips": [
+        "Investiga la misión/visión de la empresa",
+        "Sé genuino en tus respuestas",
+        "Haz preguntas sobre la cultura",
+        "Demuestra entusiasmo por el rol",
+        "Conecta tus valores con los de la empresa"
+      ]
+    },
+    "case_study": {
+      "description": "Resolución de problema real",
+      "common_in": ["Consultoría", "Producto", "Analytics"],
+      "duration_minutes": 90,
+      "typical_format": [
+        "Caso de negocio complejo",
+        "Datos desestructurados",
+        "Análisis y presentación",
+        "Defensa de recomendaciones",
+        "Preguntas de seguimiento"
+      ],
+      "preparation_tips": [
+        "Practica frameworks (MECE, 80/20)",
+        "Aprende a estructurar problemas",
+        "Estudia casos reales",
+        "Practica presentaciones",
+        "Ten datos y ejemplos listos"
+      ]
+    }
+  },
+
+  "cv_best_practices": {
+    "general": [
+      "Máximo 1 página para junior, 2 para senior",
+      "Sans-serif font (Calibri, Helvetica, Arial)",
+      "Font size 10-12pt",
+      "Márgenes 0.5-1 inch",
+      "Usa bullets, no párrafos largos",
+      "Acción + Resultado (cuantificado)",
+      "Reverse chronological order"
+    ],
+    "sections_order": [
+      "Header (nombre, contacto)",
+      "Resumen profesional (3-4 líneas)",
+      "Experiencia laboral",
+      "Educación",
+      "Skills técnicas",
+      "Certificaciones",
+      "Proyectos destacados (opcional)"
+    ],
+    "action_verbs": [
+      "Desarrollé", "Implementé", "Lideré", "Optimicé",
+      "Automaticé", "Diseñé", "Contribuí", "Mejorqué",
+      "Creé", "Gestioné", "Coordiné", "Resolví"
+    ],
+    "what_to_avoid": [
+      "Foto (salvo networking)",
+      "Información personal innecesaria",
+      "Errores ortográficos",
+      "Nombres de empresas confidenciales",
+      "Tecnologías obsoletas",
+      "Gaps sin explicación",
+      "Genéricos (ej: 'hard worker')"
+    ]
+  },
+
+  "salary_negotiation": {
+    "tips": [
+      "Investiga el rango salarial del puesto",
+      "Pide lo que mereces basado en datos",
+      "No digas número primero",
+      "Incluye beneficios (vacaciones, bonos, flexibilidad)",
+      "Negocia para el largo plazo",
+      "Sé profesional pero firme",
+      "Ten 2-3 opciones de beneficios"
+    ],
+    "phrases": [
+      "Basándome en mi experiencia y el mercado, esperaba algo en el rango de X-Y",
+      "¿Cuál es el rango presupuestado para este puesto?",
+      "Aprecio la oferta, me gustaría conversar sobre X",
+      "¿Podríamos explorar opciones de work-from-home o flexibilidad?",
+      "¿Hay oportunidad para revisión salarial en los primeros 6 meses?"
+    ],
+    "red_flags": [
+      "Se niegan a discutir salario hasta el final",
+      "Oferta significativamente bajo mercado",
+      "Sin beneficios claros",
+      "Sin crecimiento salarial a futuro",
+      "Vaguedad en términos de empleo"
+    ]
+  },
+
+  "market_trends": {
+    "2026": [
+      "Demanda alta por AI/ML engineers",
+      "Full-stack developers muy solicitados",
+      "Automatización industrial en expansión",
+      "Cloud expertise (AWS, GCP, Azure) premium",
+      "Seguridad informática en alta demanda",
+      "Data engineers mejor pagados que antes",
+      "Skills 'soft' igual de importantes que técnicas",
+      "Remoto es norma, no excepción",
+      "Experiencia en startups altamente valorada"
+    ],
+    "skills_in_demand": [
+      "Python",
+      "JavaScript/TypeScript",
+      "React/Vue",
+      "Cloud (AWS, GCP)",
+      "Docker/Kubernetes",
+      "SQL/NoSQL",
+      "Git",
+      "CI/CD",
+      "Comunicación",
+      "Problem-solving"
+    ],
+    "skills_declining": [
+      "Flash",
+      "Internet Explorer",
+      "COBOL (excepto en bancos)",
+      "jQuery",
+      "PHP antiguo"
+    ]
+  },
+
+  "cover_letter_templates": {
+    "professional": {
+      "structure": [
+        "Saludo formal a la persona responsable",
+        "1-2 líneas: por qué te interesa la posición",
+        "2-3 líneas: cómo tu experiencia encaja",
+        "1-2 líneas: qué aportes específicos haces",
+        "1 línea: cierre profesional"
+      ],
+      "tone": "Formal pero personal",
+      "length_words": 200,
+      "example_opening": "Estimado/a [nombre],\n\nMe dirijo a usted respecto a la posición de [puesto] en [empresa]..."
+    },
+    "casual": {
+      "structure": [
+        "Saludo casual personalizado",
+        "Por qué te emociona esta oportunidad",
+        "Qué hace único tu perfil",
+        "Pregunta sobre el rol",
+        "Despedida casual pero profesional"
+      ],
+      "tone": "Amigable, genuino, entusiasta",
+      "length_words": 180,
+      "example_opening": "Hola [nombre],\n\nVi la oferta para [puesto] en [empresa] y no pude evitar aplicar..."
+    }
+  },
+
+  "networking_tips": {
+    "online": [
+      "Completa 100% tu perfil LinkedIn",
+      "Publica contenido relevante 1-2 veces/semana",
+      "Comenta thoughtfully en posts de industria",
+      "Conecta con 10-15 personas nuevas/semana",
+      "Participa en comunidades online (Reddit, Discord)",
+      "Sigue empresas que te interesan",
+      "Activa 'Open to Work' en LinkedIn"
+    ],
+    "offline": [
+      "Asiste a meetups de tu industria",
+      "Congresos/conferencias tech",
+      "Grupos de profesionales locales",
+      "Charlas en universidades",
+      "Eventos de networking oficial",
+      "Colabora en proyectos open source",
+      "Mentoría (ser y recibir)"
+    ],
+    "follow_up": [
+      "Envía mensajes personalizados (no templates)",
+      "Menciona algo específico de la persona",
+      "Propón valor, no pidas",
+      "Mantén contacto cada 3-6 meses",
+      "Sé genuino y auténtico",
+      "Ayuda a otros sin esperar retorno"
+    ]
+  },
+
+  "red_flags_in_jobs": [
+    "Puesto vacío hace >3 meses",
+    "Descripción vaga o mal redactada",
+    "Salario 'según experiencia' (suele ser bajo)",
+    "Sin beneficios claros",
+    "Muchas responsabilidades, junior level",
+    "Sin info sobre empresa",
+    "Entrevista desorganizada",
+    "Gerente parece tóxico",
+    "Rotación alta de personal",
+    "Demandan tech obsoleta"
+  ],
+
+  "green_flags_in_jobs": [
+    "Descripción clara y detallada",
+    "Salario específico publicado",
+    "Beneficios claros (salud, vacaciones, bonos)",
+    "Opciones de trabajo remoto/flexible",
+    "Crecimiento profesional visible",
+    "Equipo parece amigable",
+    "Entrevista bien estructurada",
+    "Feedback rápido del proceso",
+    "Preguntas sobre bienestar del candidato",
+    "Tech stack moderno y relevante"
+  ]
+}
