@@ -257,6 +257,53 @@ def calculate_job_match(cv, job) -> dict:
         'reason': reason
     }
 
+def extract_text_from_pdf(file_path: str) -> str:
+    """Extrae texto de un archivo PDF"""
+    try:
+        import pdfplumber
+        text = ""
+        with pdfplumber.open(file_path) as pdf:
+            for page in pdf.pages:
+                text += page.extract_text() or ""
+        return text.strip()
+    except Exception as e:
+        logger.warning(f"Error extracting PDF text: {str(e)}")
+        return ""
+
+def extract_text_from_docx(file_path: str) -> str:
+    """Extrae texto de un archivo DOCX"""
+    try:
+        from docx import Document
+        doc = Document(file_path)
+        text = "\n".join([para.text for para in doc.paragraphs])
+        return text.strip()
+    except Exception as e:
+        logger.warning(f"Error extracting DOCX text: {str(e)}")
+        return ""
+
+def extract_cv_text(file_path: str) -> str:
+    """Extrae texto de un CV en formato PDF o DOCX"""
+    if not os.path.exists(file_path):
+        logger.warning(f"CV file not found: {file_path}")
+        return ""
+
+    file_lower = file_path.lower()
+
+    if file_lower.endswith('.pdf'):
+        return extract_text_from_pdf(file_path)
+    elif file_lower.endswith('.docx'):
+        return extract_text_from_docx(file_path)
+    elif file_lower.endswith('.txt'):
+        try:
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                return f.read().strip()
+        except Exception as e:
+            logger.warning(f"Error reading text file: {str(e)}")
+            return ""
+    else:
+        logger.warning(f"Unsupported file format: {file_path}")
+        return ""
+
 def analyze_cv_with_claude(file_path: str) -> dict:
     """
     Analiza un CV usando Claude para extraer información
@@ -268,24 +315,18 @@ def analyze_cv_with_claude(file_path: str) -> dict:
         dict con: analysis, skills, experience_years, job_titles, ats_score
     """
     try:
-        # Verificar que el archivo existe
-        if not os.path.exists(file_path):
-            logger.warning(f"CV file not found: {file_path}")
-            return {
-                'analysis': 'CV procesado',
-                'skills': ['communication', 'teamwork'],
-                'experience_years': 2,
-                'job_titles': ['Profesional'],
-                'ats_score': 65
-            }
+        # Extraer texto del CV
+        cv_content = extract_cv_text(file_path)
 
-        # Leer contenido del archivo
-        try:
-            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                cv_content = f.read()
-        except Exception as read_err:
-            logger.warning(f"Could not read CV file: {read_err}")
-            cv_content = "CV file uploaded successfully"
+        if not cv_content:
+            logger.warning(f"Could not extract text from CV: {file_path}")
+            return {
+                'analysis': 'No se pudo extraer texto del CV. Por favor verifica el formato.',
+                'skills': [],
+                'experience_years': 0,
+                'job_titles': [],
+                'ats_score': 0
+            }
 
         # Prompt para analizar CV
         analysis_prompt = """Analiza este CV en profundidad. Extrae y devuelve SOLO un JSON válido con esta estructura exacta:
@@ -324,7 +365,10 @@ No incluyas markdown, explicaciones ni nada más. Solo el JSON."""
             try:
                 json_text = json_match.group(1) if json_match.lastindex else json_match.group()
                 result = json.loads(json_text)
-            except json.JSONDecodeError:
+                logger.info(f"✅ CV analyzed successfully: {result.get('skills', [])} skills found")
+                return result
+            except json.JSONDecodeError as e:
+                logger.warning(f"JSON parse error: {str(e)}")
                 result = {
                     'analysis': 'CV analizado',
                     'skills': [],
@@ -333,6 +377,7 @@ No incluyas markdown, explicaciones ni nada más. Solo el JSON."""
                     'ats_score': 50
                 }
         else:
+            logger.warning(f"No JSON found in response: {response_text[:200]}")
             result = {
                 'analysis': 'CV analizado',
                 'skills': [],
@@ -344,14 +389,13 @@ No incluyas markdown, explicaciones ni nada más. Solo el JSON."""
         return result
 
     except Exception as e:
-        logger.error(f"CV analysis error: {str(e)}")
-        # Devolver respuesta segura si hay error
+        logger.error(f"CV analysis error: {str(e)}", exc_info=True)
         return {
-            'analysis': 'CV subido y listo para procesamiento',
+            'analysis': 'Error al analizar el CV',
             'skills': [],
             'experience_years': 0,
             'job_titles': [],
-            'ats_score': 50
+            'ats_score': 0
         }
 
 
