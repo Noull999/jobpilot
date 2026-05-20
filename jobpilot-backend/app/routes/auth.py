@@ -1,12 +1,25 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, create_refresh_token
+from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 from app.models import User, Subscription
 from app import db
 import bcrypt
 import logging
+import re
 
 bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 logger = logging.getLogger(__name__)
+
+def validate_password(password: str) -> tuple[bool, str]:
+    """Validate password strength. Returns (is_valid, error_message)"""
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters"
+    if not re.search(r'[A-Z]', password):
+        return False, "Password must contain at least one uppercase letter"
+    if not re.search(r'[a-z]', password):
+        return False, "Password must contain at least one lowercase letter"
+    if not re.search(r'[0-9]', password):
+        return False, "Password must contain at least one number"
+    return True, ""
 
 @bp.route('/signup', methods=['POST'])
 def signup():
@@ -20,9 +33,10 @@ def signup():
         # Validaciones
         if not email or '@' not in email:
             return jsonify({'error': 'Valid email required'}), 400
-        
-        if not password or len(password) < 8:
-            return jsonify({'error': 'Password must be at least 8 characters'}), 400
+
+        is_valid, error_msg = validate_password(password)
+        if not is_valid:
+            return jsonify({'error': error_msg}), 400
         
         # Verificar si existe
         if User.query.filter_by(email=email).first():
@@ -103,18 +117,16 @@ def login():
         return jsonify({'error': 'Internal server error'}), 500
 
 @bp.route('/refresh', methods=['POST'])
+@jwt_required(refresh=True)
 def refresh():
-    """Refresh access token"""
+    """Refresh access token using refresh token"""
     try:
-        from flask_jwt_extended import jwt_required, get_jwt_identity
-        
-        @jwt_required(refresh=True)
-        def _refresh():
-            user_id = get_jwt_identity()
-            access_token = create_access_token(identity=user_id)
-            return jsonify({'access_token': access_token}), 200
-        
-        return _refresh()
+        user_id = get_jwt_identity()
+        access_token = create_access_token(identity=user_id)
+        return jsonify({
+            'success': True,
+            'access_token': access_token
+        }), 200
     except Exception as e:
         logger.error(f"Refresh error: {str(e)}")
-        return jsonify({'error': 'Refresh failed'}), 401
+        return jsonify({'error': 'Token refresh failed'}), 401

@@ -10,9 +10,15 @@ logger = logging.getLogger(__name__)
 _client = None
 
 def get_client():
+    """Inicializa cliente de Anthropic con versión 0.103.1"""
     global _client
     if _client is None:
-        _client = anthropic.Anthropic(api_key=os.getenv('CLAUDE_API_KEY'))
+        api_key = os.getenv('CLAUDE_API_KEY')
+        if not api_key:
+            raise ValueError("CLAUDE_API_KEY not configured in environment")
+
+        _client = anthropic.Anthropic(api_key=api_key)
+        logger.info(f"✅ Anthropic client initialized (v{anthropic.__version__})")
     return _client
 
 # System prompt especializado
@@ -81,14 +87,14 @@ def chat_with_coach(user_id: int, message: str, tier: str) -> dict:
     Returns:
         dict con: response, tokens, cost
     """
-
     try:
-        logger.info(f"Chat request from user {user_id}, tier: {tier}")
+        logger.info(f"💬 Chat request from user {user_id} (tier: {tier})")
+
         # Obtener historial previo (últimos 10 chats para contexto)
         history = ChatHistory.query.filter_by(user_id=user_id)\
             .order_by(ChatHistory.created_at.desc())\
             .limit(10).all()
-        
+
         # Construir messages array para Claude (en orden cronológico)
         messages = []
         for chat in reversed(history):
@@ -100,32 +106,38 @@ def chat_with_coach(user_id: int, message: str, tier: str) -> dict:
                 "role": "assistant",
                 "content": chat.message_ai
             })
-        
+
         # Agregar mensaje actual
         messages.append({
             "role": "user",
             "content": message
         })
-        
-        # Llamar a Claude API
+
+        logger.debug(f"Calling Claude API with {len(messages)} messages")
+
+        # Llamar a Claude API con modelo actualizado
+        # Usando claude-3-5-sonnet que es más barato y eficiente
         response = get_client().messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-3-5-sonnet-20241022",
             max_tokens=1200,
             system=SYSTEM_PROMPT,
             messages=messages
         )
-        
+
         # Extraer respuesta
         ai_response = response.content[0].text
-        
+
         # Calcular tokens usados
         input_tokens = response.usage.input_tokens
         output_tokens = response.usage.output_tokens
         total_tokens = input_tokens + output_tokens
-        
-        # Calcular costo: $0.003 por 1K input, $0.015 por 1K output
+
+        # Calcular costo: claude-3-5-sonnet pricing
+        # Input: $0.003 per 1K, Output: $0.015 per 1K
         cost = (input_tokens * 0.003 + output_tokens * 0.015) / 1000
-        
+
+        logger.info(f"✅ Claude response: {total_tokens} tokens, ${cost:.4f}")
+
         # Guardar en DB
         chat_record = ChatHistory(
             user_id=user_id,
@@ -135,7 +147,7 @@ def chat_with_coach(user_id: int, message: str, tier: str) -> dict:
             cost_usd=cost
         )
         db.session.add(chat_record)
-        
+
         # Actualizar usage limit para free tier
         if tier == 'free':
             usage = UsageLimit.query.filter_by(user_id=user_id).first()
@@ -144,20 +156,26 @@ def chat_with_coach(user_id: int, message: str, tier: str) -> dict:
                 db.session.add(usage)
             usage.chats_this_month += 1
             usage.updated_at = datetime.now(timezone.utc)
-        
+
         db.session.commit()
-        
+
         return {
             "response": ai_response,
             "tokens": total_tokens,
             "cost": float(cost)
         }
-        
+
+    except anthropic.AuthenticationError as e:
+        logger.error(f"❌ Auth error - Invalid API key: {str(e)}")
+        raise Exception("Invalid API key. Check CLAUDE_API_KEY environment variable.")
+    except anthropic.RateLimitError as e:
+        logger.error(f"⏱️ Rate limit error: {str(e)}")
+        raise Exception("Too many requests. Please try again in a moment.")
     except anthropic.APIError as e:
-        logger.error(f"Claude API error: {str(e)}")
+        logger.error(f"❌ Claude API error: {str(e)}")
         raise Exception(f"AI service error: {str(e)}")
     except Exception as e:
-        logger.error(f"Chat error: {str(e)}")
+        logger.error(f"❌ Chat error: {type(e).__name__}: {str(e)}", exc_info=True)
         db.session.rollback()
         raise
 
