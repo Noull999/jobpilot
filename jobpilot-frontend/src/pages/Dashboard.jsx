@@ -19,6 +19,14 @@ export default function Dashboard() {
   const [cv, setCv] = useState(null)
   const [jobMatches, setJobMatches] = useState([])
   const [cvUploading, setCvUploading] = useState(false)
+  const [showAllJobs, setShowAllJobs] = useState(false)
+  const [generateLetterLoading, setGenerateLetterLoading] = useState(false)
+  const [coverLetterForm, setCoverLetterForm] = useState({
+    position: '',
+    company: '',
+    tone: 'formal'
+  })
+  const [generatedLetter, setGeneratedLetter] = useState('')
 
   useEffect(() => {
     const token = localStorage.getItem('access_token')
@@ -144,6 +152,26 @@ export default function Dashboard() {
   const openChatPanel = async () => {
     setShowChatPanel(true)
     await loadChatHistory()
+  }
+
+  const handleGenerateLetter = async () => {
+    if (!coverLetterForm.position.trim() || !coverLetterForm.company.trim()) {
+      toast.error('Por favor completa todos los campos')
+      return
+    }
+
+    setGenerateLetterLoading(true)
+    try {
+      const prompt = `Genera una carta de presentación ${coverLetterForm.tone} para el puesto de ${coverLetterForm.position} en ${coverLetterForm.company}. Considera mi CV y experiencia profesional. La carta debe ser persuasiva y destacar mis mejores habilidades.`
+
+      const res = await chatAPI.send(prompt, 'cover')
+      setGeneratedLetter(res.data?.response || '')
+      toast.success('Carta generada exitosamente')
+    } catch (error) {
+      toast.error('Error al generar la carta')
+    } finally {
+      setGenerateLetterLoading(false)
+    }
   }
 
   if (loading) {
@@ -524,7 +552,10 @@ export default function Dashboard() {
                     </div>
                     <div className="text-xs text-gray-3 mt-xs">// que mejor encajan con tu perfil</div>
                   </div>
-                  <button className="btn btn-secondary text-sm">
+                  <button
+                    onClick={() => setShowAllJobs(true)}
+                    className="btn btn-secondary text-sm"
+                  >
                     Ver todos →
                   </button>
                 </div>
@@ -628,7 +659,7 @@ export default function Dashboard() {
           )}
 
           {activeView === 'cover' && (
-            <div className="max-w-4xl">
+            <div className="max-w-4xl space-y-lg">
               <div className="bg-black-3 border border-gray-1 rounded-lg p-lg">
                 <h2 className="text-xl font-bold text-white mb-lg">Generador de Carta de Presentación</h2>
                 <div className="space-y-lg">
@@ -637,6 +668,8 @@ export default function Dashboard() {
                     <input
                       type="text"
                       placeholder="Ej: Developer Full Stack"
+                      value={coverLetterForm.position}
+                      onChange={(e) => setCoverLetterForm({ ...coverLetterForm, position: e.target.value })}
                       className="w-full input-base bg-black border border-gray-1 text-white placeholder-gray-4 rounded"
                     />
                   </div>
@@ -645,22 +678,52 @@ export default function Dashboard() {
                     <input
                       type="text"
                       placeholder="Ej: Google, Mercado Libre"
+                      value={coverLetterForm.company}
+                      onChange={(e) => setCoverLetterForm({ ...coverLetterForm, company: e.target.value })}
                       className="w-full input-base bg-black border border-gray-1 text-white placeholder-gray-4 rounded"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-white mb-md">Tono Deseado</label>
-                    <select className="w-full input-base bg-black border border-gray-1 text-white rounded">
+                    <select
+                      value={coverLetterForm.tone}
+                      onChange={(e) => setCoverLetterForm({ ...coverLetterForm, tone: e.target.value })}
+                      className="w-full input-base bg-black border border-gray-1 text-white rounded"
+                    >
                       <option value="formal">Formal y Profesional</option>
                       <option value="casual">Casual y Descontracturado</option>
                       <option value="energetic">Energético y Dinámico</option>
                     </select>
                   </div>
-                  <button className="btn btn-primary w-full">
-                    Generar Carta con Coach →
+                  <button
+                    onClick={handleGenerateLetter}
+                    disabled={generateLetterLoading}
+                    className="btn btn-primary w-full"
+                  >
+                    {generateLetterLoading ? 'Generando...' : 'Generar Carta con Coach →'}
                   </button>
                 </div>
               </div>
+
+              {generatedLetter && (
+                <div className="bg-black-3 border border-gray-1 rounded-lg p-lg">
+                  <div className="flex items-center justify-between mb-lg pb-lg border-b border-gray-1">
+                    <h3 className="text-lg font-bold text-white">Tu Carta Generada</h3>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(generatedLetter)
+                        toast.success('Copiado al portapapeles')
+                      }}
+                      className="btn btn-secondary text-sm"
+                    >
+                      Copiar →
+                    </button>
+                  </div>
+                  <div className="bg-black rounded-lg p-lg text-gray-3 text-sm whitespace-pre-wrap max-h-96 overflow-y-auto border border-gray-1">
+                    {generatedLetter}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -680,6 +743,48 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+
+        {/* ALL JOBS MODAL */}
+        {showAllJobs && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-lg">
+            <div className="bg-black-3 border border-gray-1 rounded-lg max-w-2xl w-full max-h-96 overflow-y-auto">
+              <div className="sticky top-0 bg-black-3 border-b border-gray-1 p-lg flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white">Todos los Empleos Recomendados</h2>
+                <button
+                  onClick={() => setShowAllJobs(false)}
+                  className="text-gray-4 hover:text-white text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="p-lg space-y-md">
+                {jobMatches && jobMatches.length > 0 ? (
+                  jobMatches.map((match, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-md bg-black rounded-lg border border-gray-1 hover:border-red transition-colors cursor-pointer"
+                    >
+                      <div className="flex-1">
+                        <div className="font-semibold text-white">{match.job?.company || 'Empresa'}</div>
+                        <div className="text-sm text-gray-4">{match.job?.title || 'Posición'}</div>
+                        <div className="text-xs text-gray-3 mt-xs">{match.match_reason || 'Match encontrado'}</div>
+                      </div>
+                      <div className="text-center min-w-24">
+                        <div className="text-lg font-bold text-red">{Math.round(match.match_score)}%</div>
+                        <div className="text-xs text-gray-3">compatibilidad</div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-lg text-gray-4">
+                    No hay empleos disponibles. Carga tu CV para ver recomendaciones.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* CHAT PANEL */}
