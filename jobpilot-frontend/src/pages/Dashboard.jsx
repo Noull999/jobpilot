@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { userAPI, chatAPI, cvAPI, jobsAPI } from '../services/api'
+import CVEditor from '../components/CVEditor'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -27,6 +28,14 @@ export default function Dashboard() {
     tone: 'formal'
   })
   const [generatedLetter, setGeneratedLetter] = useState('')
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [editingSkills, setEditingSkills] = useState(false)
+  const [newSkill, setNewSkill] = useState('')
+  const [tempSkills, setTempSkills] = useState([])
+  const [showCVEditor, setShowCVEditor] = useState(false)
+  const [savingCV, setSavingCV] = useState(false)
+  const fileInputRef = useRef()
+  const cvUploadRef = useRef()
 
   useEffect(() => {
     const token = localStorage.getItem('access_token')
@@ -38,6 +47,8 @@ export default function Dashboard() {
     const hasCompletedOnboarding = localStorage.getItem('onboarding-completed')
     if (!hasCompletedOnboarding) {
       setShowOnboarding(true)
+      setLoading(false)
+      return
     }
 
     loadDashboard()
@@ -79,6 +90,7 @@ export default function Dashboard() {
     setShowOnboarding(false)
     setOnboardingStep('welcome')
     toast.success('¡Bienvenido a JobPilot!')
+    loadDashboard()
   }
 
   const handleCvUpload = async (e) => {
@@ -104,6 +116,54 @@ export default function Dashboard() {
     }
   }
 
+  const startEditingSkills = () => {
+    setTempSkills(cv?.skills || [])
+    setEditingSkills(true)
+  }
+
+  const addSkill = () => {
+    if (newSkill.trim() && !tempSkills.includes(newSkill.trim())) {
+      setTempSkills([...tempSkills, newSkill.trim()])
+      setNewSkill('')
+    }
+  }
+
+  const removeSkill = (skillToRemove) => {
+    setTempSkills(tempSkills.filter(s => s !== skillToRemove))
+  }
+
+  const saveSkills = async () => {
+    if (!cv) return
+    try {
+      const updatedCv = { ...cv, skills: tempSkills }
+      setCv(updatedCv)
+      setEditingSkills(false)
+      toast.success('Skills actualizados')
+      // Reload matches con skills nuevas
+      const matchesRes = await jobsAPI.matches(10)
+      setJobMatches(matchesRes.data?.matches || [])
+    } catch (error) {
+      toast.error('Error al actualizar skills')
+    }
+  }
+
+  const handleCVSave = (updatedCv) => {
+    setCv(updatedCv)
+    setShowCVEditor(false)
+    toast.success('CV actualizado correctamente')
+    setSavingCV(false)
+  }
+
+  const refreshJobMatches = async () => {
+    try {
+      const matchesRes = await jobsAPI.matches(10)
+      setJobMatches(matchesRes.data?.matches || [])
+      toast.success('Empleos actualizados')
+    } catch (error) {
+      toast.error('Error al actualizar empleos')
+    }
+  }
+
   const loadChatHistory = async () => {
     try {
       const res = await chatAPI.history()
@@ -119,15 +179,23 @@ export default function Dashboard() {
   }
 
   const sendMessage = async () => {
-    if (!chatInput.trim()) return
+    if (!chatInput.trim() && !selectedFile) return
 
-    const userMessage = { text: chatInput, sender: 'user' }
+    const userMessage = { text: selectedFile ? `📎 ${selectedFile.name}\n${chatInput || ''}` : chatInput, sender: 'user' }
     setChatMessages([...chatMessages, userMessage])
     setChatInput('')
     setChatLoading(true)
 
     try {
-      const res = await chatAPI.send(chatInput, activeView)
+      let res
+      if (selectedFile) {
+        res = await chatAPI.sendWithFile(chatInput || `Analiza este archivo: ${selectedFile.name}`, selectedFile, activeView)
+        setSelectedFile(null)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+      } else {
+        res = await chatAPI.send(chatInput, activeView)
+      }
+
       const coachMessage = { text: res.data?.response || 'Entendido', sender: 'coach' }
       setChatMessages((prev) => [...prev, coachMessage])
     } catch (error) {
@@ -252,13 +320,19 @@ export default function Dashboard() {
               </div>
 
               <div className="mb-2xl">
-                <label className="block">
+                <label className="block cursor-pointer">
                   <div className="border-2 border-dashed border-gray-1 rounded-lg p-2xl cursor-pointer hover:border-red transition-colors">
                     <div className="text-4xl mb-md">⬆️</div>
                     <div className="text-sm font-semibold text-white mb-xs">Click para subir CV</div>
                     <div className="text-xs text-gray-4">PDF, DOC o DOCX • Máx 5MB</div>
                   </div>
-                  <input type="file" className="hidden" accept=".pdf,.doc,.docx" onChange={handleCvUpload} />
+                  <input
+                    ref={cvUploadRef}
+                    type="file"
+                    className="hidden"
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleCvUpload}
+                  />
                 </label>
               </div>
 
@@ -505,27 +579,96 @@ export default function Dashboard() {
                 </div>
 
                 {cv ? (
-                  <div className="flex items-start gap-lg">
-                    <div className="w-16 h-16 rounded-lg bg-red flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
-                      {user?.name?.substring(0, 2).toUpperCase() || 'JA'}
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-white font-bold mb-xs">{user?.name}</div>
-                      <div className="text-sm text-gray-4 mb-md">
-                        {cv?.job_titles?.[0] || 'Profesional'} {cv?.experience_years ? `· ${cv.experience_years} años` : ''}
+                  <div className="space-y-md">
+                    {/* Profile Header */}
+                    <div className="flex items-start gap-lg p-md bg-black rounded-lg border border-gray-1">
+                      <div className="w-16 h-16 rounded-lg bg-red flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
+                        {user?.name?.substring(0, 2).toUpperCase() || 'JA'}
                       </div>
-                      <div className="flex flex-wrap gap-xs">
-                        {(cv?.skills || []).slice(0, 6).map((skill) => (
-                          <span key={skill} className="px-md py-xs bg-red text-white text-xs rounded">
-                            {skill}
-                          </span>
-                        ))}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-white font-bold mb-xs">{user?.name}</div>
+                        <div className="text-sm text-gray-4 mb-md">
+                          {cv?.job_titles?.[0] || 'Profesional'}
+                          {cv?.experience_years && ` • ${cv.experience_years} años de experiencia`}
+                        </div>
+                        <div className="flex items-center gap-md">
+                          <div className="flex-1">
+                            <div className="text-xs text-gray-3 mb-xs">Puntuación ATS</div>
+                            <div className="flex items-center gap-md">
+                              <div className="flex-1 bg-gray-1 rounded-full h-2 overflow-hidden">
+                                <div
+                                  className="bg-red h-full"
+                                  style={{ width: `${cv?.ats_score || 0}%` }}
+                                />
+                              </div>
+                              <span className="text-lg font-bold text-red w-10 text-right">{cv?.ats_score || 0}</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex flex-col items-center flex-shrink-0">
-                      <div className="text-3xl font-bold text-red">{cv?.ats_score || 0}</div>
-                      <div className="text-xs text-gray-3 text-center">Puntuación<br/>ATS</div>
+
+                    {/* Skills Section */}
+                    {cv?.skills && cv.skills.length > 0 && (
+                      <div className="p-md bg-black rounded-lg border border-gray-1">
+                        <div className="flex items-center justify-between mb-md">
+                          <h3 className="text-sm text-gray-4 font-semibold">Skills Técnicos ({cv.skills.length})</h3>
+                          <button
+                            onClick={() => {
+                              setTempSkills(cv?.skills || [])
+                              setEditingSkills(true)
+                              setActiveView('cv')
+                            }}
+                            className="text-xs text-red hover:text-red/80 transition-colors"
+                          >
+                            Editar
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-xs">
+                          {cv.skills.map((skill) => (
+                            <span key={skill} className="px-md py-xs bg-red text-white text-xs rounded">
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Experience Section */}
+                    {cv?.job_titles && cv.job_titles.length > 0 && (
+                      <div className="p-md bg-black rounded-lg border border-gray-1">
+                        <h3 className="text-sm text-gray-4 mb-md font-semibold">Experiencia Laboral</h3>
+                        <div className="space-y-xs">
+                          {cv.job_titles.map((title, idx) => (
+                            <div key={idx} className="text-sm text-white">• {title}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* CV Info */}
+                    <div className="p-md bg-black rounded-lg border border-gray-1">
+                      <h3 className="text-sm text-gray-4 mb-md font-semibold">Información del CV</h3>
+                      <div className="space-y-xs text-sm">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-4">Archivo:</span>
+                          <span className="text-white">{cv?.filename}</span>
+                        </div>
+                        {cv?.uploaded_at && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-4">Cargado:</span>
+                            <span className="text-white">{new Date(cv.uploaded_at).toLocaleDateString('es-ES')}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
+
+                    <button
+                      onClick={() => setActiveView('cv')}
+                      className="w-full btn btn-secondary text-sm"
+                    >
+                      Actualizar CV
+                    </button>
                   </div>
                 ) : (
                   <div className="text-center py-2xl">
@@ -563,16 +706,23 @@ export default function Dashboard() {
                 {jobMatches && jobMatches.length > 0 ? (
                   <div className="space-y-md">
                     {jobMatches.slice(0, 3).map((match, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-md bg-black rounded-lg border border-gray-1 hover:border-red transition-colors cursor-pointer">
-                        <div>
-                          <div className="font-semibold text-white">{match.job?.company}</div>
-                          <div className="text-sm text-gray-4">{match.job?.title}</div>
+                      <Link
+                        key={idx}
+                        to={`/jobs/${match.job_id}`}
+                        state={{ match }}
+                        className="block"
+                      >
+                        <div className="flex items-center justify-between p-md bg-black rounded-lg border border-gray-1 hover:border-red transition-colors cursor-pointer">
+                          <div>
+                            <div className="font-semibold text-white">{match.job?.company}</div>
+                            <div className="text-sm text-gray-4">{match.job?.title}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-lg font-bold text-red">{Math.round(match.match_score)}%</div>
+                            <div className="text-xs text-gray-3">compatibilidad</div>
+                          </div>
                         </div>
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-red">{Math.round(match.match_score)}%</div>
-                          <div className="text-xs text-gray-3">compatibilidad</div>
-                        </div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 ) : (
@@ -593,27 +743,245 @@ export default function Dashboard() {
 
           {activeView === 'cv' && (
             <div className="max-w-4xl space-y-lg">
-              <div className="bg-black-3 border border-gray-1 rounded-lg p-lg">
-                <h2 className="text-xl font-bold text-white mb-lg">Análisis de tu CV</h2>
-                <div className="grid grid-cols-2 gap-lg">
-                  <div>
-                    <h3 className="text-white font-bold mb-md">✓ Fortalezas</h3>
-                    <ul className="space-y-md text-sm text-gray-4">
-                      <li>→ Stack técnico completo</li>
-                      <li>→ Experiencia en desarrollo e IT</li>
-                      <li>→ Buena estructura profesional</li>
-                    </ul>
+              {cv ? (
+                <>
+                  {/* CV Analysis */}
+                  <div className="bg-black-3 border border-gray-1 rounded-lg p-lg">
+                    <h2 className="text-xl font-bold text-white mb-lg">Análisis de tu CV</h2>
+                    <div className="space-y-lg">
+                      {/* ATS Score */}
+                      <div className="p-lg bg-black rounded-lg border border-gray-1">
+                        <div className="mb-lg">
+                          <div className="flex items-center justify-between mb-md">
+                            <span className="text-sm text-gray-4">Puntuación ATS (Compatibility)</span>
+                            <span className={`font-bold text-lg ${cv?.ats_score >= 80 ? 'text-green-500' : cv?.ats_score >= 60 ? 'text-yellow-500' : 'text-orange-500'}`}>
+                              {cv?.ats_score || 0}%
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-1 rounded-full h-3 overflow-hidden">
+                            <div
+                              className={`h-full transition-all ${
+                                cv?.ats_score >= 80
+                                  ? 'bg-green-500'
+                                  : cv?.ats_score >= 60
+                                  ? 'bg-yellow-500'
+                                  : 'bg-orange-500'
+                              }`}
+                              style={{ width: `${cv?.ats_score || 0}%` }}
+                            />
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-3">
+                          {cv?.ats_score >= 80
+                            ? '✓ Excelente compatibilidad con sistemas ATS'
+                            : cv?.ats_score >= 60
+                            ? '⚠ Buena compatibilidad, pero hay espacio para mejora'
+                            : '→ Necesita optimización para sistemas ATS'}
+                        </p>
+                      </div>
+
+                      {/* Skills Summary */}
+                      <div className="p-lg bg-black rounded-lg border border-gray-1">
+                        <div className="flex items-center justify-between mb-md">
+                          <h3 className="text-white font-bold">
+                            Skills Detectados ({editingSkills ? tempSkills.length : cv?.skills?.length || 0})
+                          </h3>
+                          {!editingSkills && (
+                            <button
+                              onClick={startEditingSkills}
+                              className="btn btn-secondary text-xs py-xs px-md"
+                            >
+                              Editar
+                            </button>
+                          )}
+                        </div>
+
+                        {editingSkills ? (
+                          <div className="space-y-md">
+                            {/* Edit Mode */}
+                            <div className="flex gap-md">
+                              <input
+                                type="text"
+                                value={newSkill}
+                                onChange={(e) => setNewSkill(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && addSkill()}
+                                placeholder="Agrega un skill..."
+                                className="flex-1 input-base text-sm bg-black-3 border border-gray-1 text-white placeholder-gray-4 rounded px-md py-xs"
+                              />
+                              <button
+                                onClick={addSkill}
+                                className="btn btn-primary text-xs px-md py-xs"
+                              >
+                                +
+                              </button>
+                            </div>
+
+                            {tempSkills.length > 0 ? (
+                              <div className="flex flex-wrap gap-md">
+                                {tempSkills.map((skill) => (
+                                  <div
+                                    key={skill}
+                                    className="px-md py-xs bg-red text-white text-xs rounded flex items-center gap-md hover:bg-red/80 transition-colors"
+                                  >
+                                    <span>{skill}</span>
+                                    <button
+                                      onClick={() => removeSkill(skill)}
+                                      className="font-bold hover:text-black transition-colors"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-4">No hay skills agregados</p>
+                            )}
+
+                            <div className="flex gap-md pt-md">
+                              <button
+                                onClick={saveSkills}
+                                className="btn btn-primary text-sm flex-1"
+                              >
+                                Guardar cambios
+                              </button>
+                              <button
+                                onClick={() => setEditingSkills(false)}
+                                className="btn btn-secondary text-sm flex-1"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            {cv?.skills && cv.skills.length > 0 ? (
+                              <div className="flex flex-wrap gap-md">
+                                {cv.skills.map((skill) => (
+                                  <span key={skill} className="px-md py-xs bg-red text-white text-xs rounded">
+                                    {skill}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-4">No se detectaron skills en tu CV. Agrega algunos con el botón "Editar"</p>
+                            )}
+                          </>
+                        )}
+                      </div>
+
+                      {/* Experience Summary */}
+                      <div className="p-lg bg-black rounded-lg border border-gray-1">
+                        <h3 className="text-white font-bold mb-md">Experiencia</h3>
+                        <div className="space-y-md">
+                          <div>
+                            <span className="text-xs text-gray-4">Años de experiencia:</span>
+                            <p className="text-white font-semibold text-lg mt-xs">
+                              {cv?.experience_years || 0} años
+                            </p>
+                          </div>
+                          {cv?.job_titles && cv.job_titles.length > 0 && (
+                            <div>
+                              <span className="text-xs text-gray-4 block mb-md">Puestos anteriores:</span>
+                              <div className="space-y-xs">
+                                {cv.job_titles.map((title, idx) => (
+                                  <div key={idx} className="text-sm text-white flex items-start gap-md">
+                                    <span className="text-gray-3 mt-xs">•</span>
+                                    <span>{title}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* AI Recommendations */}
+                      <div className="p-lg bg-black rounded-lg border border-gray-1">
+                        <h3 className="text-white font-bold mb-md">Recomendaciones</h3>
+                        <ul className="space-y-md text-sm text-gray-4">
+                          {cv?.skills?.length > 0 && (
+                            <li>✓ Tienes {cv.skills.length} skills relevantes detectadas</li>
+                          )}
+                          {cv?.experience_years >= 5 && (
+                            <li>✓ Experiencia sólida ({cv.experience_years}+ años)</li>
+                          )}
+                          {cv?.ats_score < 70 && (
+                            <li>→ Mejora formato y estructura para mejor puntuación ATS</li>
+                          )}
+                          {(!cv?.skills || cv.skills.length === 0) && (
+                            <li>→ Asegúrate de listar todos tus skills técnicos</li>
+                          )}
+                          <li>→ Agrega portafolio o GitHub para más credibilidad</li>
+                          <li>→ Incluye certificaciones si tienes</li>
+                        </ul>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-red font-bold mb-md">⚠ Áreas de mejora</h3>
-                    <ul className="space-y-md text-sm text-gray-4">
-                      <li>→ Agregar portafolio de proyectos</li>
-                      <li>→ Incluir LinkedIn en encabezado</li>
-                      <li>→ Agregar certificaciones</li>
-                    </ul>
+
+                  {/* CV Editor Section */}
+                  {!showCVEditor && (
+                    <div className="text-center">
+                      <button
+                        onClick={() => setShowCVEditor(true)}
+                        className="btn btn-secondary"
+                      >
+                        Editar Información del CV →
+                      </button>
+                    </div>
+                  )}
+
+                  {showCVEditor && (
+                    <CVEditor
+                      cv={cv}
+                      onSave={handleCVSave}
+                      loading={savingCV}
+                    />
+                  )}
+
+                  {/* Upload New CV */}
+                  <div className="bg-black-3 border border-gray-1 rounded-lg p-lg text-center">
+                    <p className="text-gray-4 mb-md text-sm">¿Quieres actualizar tu CV con uno nuevo?</p>
+                    <label className="block cursor-pointer">
+                      <input
+                        ref={cvUploadRef}
+                        type="file"
+                        className="hidden"
+                        accept=".pdf,.doc,.docx"
+                        onChange={handleCvUpload}
+                      />
+                      <button
+                        onClick={() => cvUploadRef.current?.click()}
+                        className="btn btn-primary"
+                        disabled={cvUploading}
+                      >
+                        {cvUploading ? 'Analizando...' : 'Subir nuevo CV →'}
+                      </button>
+                    </label>
                   </div>
+                </>
+              ) : (
+                <div className="text-center py-2xl">
+                  <div className="text-3xl mb-md">📄</div>
+                  <h3 className="text-white font-semibold mb-md">Aún no subimos tu CV</h3>
+                  <p className="text-gray-4 text-sm mb-lg">Carga tu CV para que nuestro Coach analice tu perfil y te recomiende empleos personalizados</p>
+                  <label className="block">
+                    <input
+                      ref={cvUploadRef}
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.doc,.docx"
+                      onChange={handleCvUpload}
+                    />
+                    <button
+                      onClick={() => cvUploadRef.current?.click()}
+                      className="btn btn-primary"
+                      disabled={cvUploading}
+                    >
+                      {cvUploading ? 'Analizando...' : 'Subir CV →'}
+                    </button>
+                  </label>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -628,7 +996,7 @@ export default function Dashboard() {
           {activeView === 'jobs' && (
             <div className="max-w-4xl">
               <h2 className="text-xl font-bold text-white mb-lg">Empleos Recomendados</h2>
-              <button className="btn btn-primary mb-lg">⟳ Actualizar</button>
+              <button onClick={refreshJobMatches} className="btn btn-primary mb-lg">⟳ Actualizar</button>
               {jobMatches && jobMatches.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
                   {jobMatches.map((match, idx) => (
@@ -761,20 +1129,26 @@ export default function Dashboard() {
               <div className="p-lg space-y-md">
                 {jobMatches && jobMatches.length > 0 ? (
                   jobMatches.map((match, idx) => (
-                    <div
+                    <Link
                       key={idx}
-                      className="flex items-center justify-between p-md bg-black rounded-lg border border-gray-1 hover:border-red transition-colors cursor-pointer"
+                      to={`/jobs/${match.job_id}`}
+                      state={{ match }}
+                      className="block"
                     >
-                      <div className="flex-1">
-                        <div className="font-semibold text-white">{match.job?.company || 'Empresa'}</div>
-                        <div className="text-sm text-gray-4">{match.job?.title || 'Posición'}</div>
-                        <div className="text-xs text-gray-3 mt-xs">{match.match_reason || 'Match encontrado'}</div>
+                      <div
+                        className="flex items-center justify-between p-md bg-black rounded-lg border border-gray-1 hover:border-red transition-colors cursor-pointer"
+                      >
+                        <div className="flex-1">
+                          <div className="font-semibold text-white">{match.job?.company || 'Empresa'}</div>
+                          <div className="text-sm text-gray-4">{match.job?.title || 'Posición'}</div>
+                          <div className="text-xs text-gray-3 mt-xs">{match.match_reason || 'Match encontrado'}</div>
+                        </div>
+                        <div className="text-center min-w-24">
+                          <div className="text-lg font-bold text-red">{Math.round(match.match_score)}%</div>
+                          <div className="text-xs text-gray-3">compatibilidad</div>
+                        </div>
                       </div>
-                      <div className="text-center min-w-24">
-                        <div className="text-lg font-bold text-red">{Math.round(match.match_score)}%</div>
-                        <div className="text-xs text-gray-3">compatibilidad</div>
-                      </div>
-                    </div>
+                    </Link>
                   ))
                 ) : (
                   <div className="text-center py-lg text-gray-4">
@@ -789,27 +1163,47 @@ export default function Dashboard() {
 
       {/* CHAT PANEL */}
       {showChatPanel && (
-        <div className="fixed right-0 top-0 h-full w-96 bg-black-2 border-l border-gray-1 flex flex-col shadow-lg z-50 animate-fade-in">
+        <div className="fixed right-0 top-0 h-full w-[600px] bg-black-2 border-l border-gray-1 flex flex-col shadow-lg z-50 animate-fade-in">
           {/* Header */}
-          <div className="border-b border-gray-1 p-md flex items-center justify-between bg-black-3">
-            <div>
-              <h3 className="font-bold text-white">Coach IA</h3>
-              <p className="text-xs text-gray-3 mt-xs">Tu asistente de carrera</p>
+          <div className="border-b border-gray-1 p-md bg-black-3">
+            <div className="flex items-center justify-between mb-md">
+              <div>
+                <h3 className="font-bold text-white">Coach IA</h3>
+                <p className="text-xs text-gray-3 mt-xs">Tu asistente de carrera</p>
+              </div>
+              <button
+                onClick={() => setShowChatPanel(false)}
+                className="text-gray-4 hover:text-white text-xl leading-none"
+              >
+                ✕
+              </button>
             </div>
-            <button
-              onClick={() => setShowChatPanel(false)}
-              className="text-gray-4 hover:text-white text-xl leading-none"
-            >
-              ✕
-            </button>
+
+            {/* Usage Stats */}
+            {stats && (
+              <div className="grid grid-cols-3 gap-xs text-xs p-xs bg-black rounded-lg">
+                <div className="text-center">
+                  <div className="text-gray-4">Chats</div>
+                  <div className="text-white font-bold">{stats.total_chats}</div>
+                </div>
+                <div className="text-center border-l border-r border-gray-1">
+                  <div className="text-gray-4">Tokens</div>
+                  <div className="text-white font-bold">{(stats.total_tokens || 0).toLocaleString()}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-gray-4">Costo</div>
+                  <div className="text-white font-bold">${(stats.total_cost || 0).toFixed(2)}</div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-md space-y-md">
+          <div className="flex-1 overflow-y-auto p-lg space-y-lg">
             {chatMessages.length === 0 ? (
               <div className="text-center py-2xl text-gray-4">
-                <div className="text-3xl mb-md">💬</div>
-                <p className="text-sm">Hola, soy tu Coach IA. ¿En qué puedo ayudarte?</p>
+                <div className="text-4xl mb-md">💬</div>
+                <p className="text-base">Hola, soy tu Coach IA. ¿En qué puedo ayudarte?</p>
               </div>
             ) : (
               chatMessages.map((msg, idx) => (
@@ -818,7 +1212,7 @@ export default function Dashboard() {
                   className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-xs rounded-lg p-md text-sm ${
+                    className={`max-w-md rounded-lg p-lg text-base whitespace-pre-wrap ${
                       msg.sender === 'user'
                         ? 'bg-red text-white'
                         : 'bg-black-3 text-gray-3 border border-gray-1'
@@ -831,8 +1225,8 @@ export default function Dashboard() {
             )}
             {chatLoading && (
               <div className="flex justify-start">
-                <div className="bg-black-3 text-gray-3 border border-gray-1 rounded-lg p-md">
-                  <span className="animate-pulse">●●●</span>
+                <div className="bg-black-3 text-gray-3 border border-gray-1 rounded-lg p-lg">
+                  <span className="animate-pulse text-lg">●●●</span>
                 </div>
               </div>
             )}
@@ -840,7 +1234,39 @@ export default function Dashboard() {
 
           {/* Input */}
           <div className="border-t border-gray-1 p-md bg-black-3">
+            {selectedFile && (
+              <div className="mb-sm text-xs text-gray-3 bg-black rounded px-sm py-xs flex items-center justify-between">
+                <span>📎 {selectedFile.name}</span>
+                <button
+                  onClick={() => {
+                    setSelectedFile(null)
+                    if (fileInputRef.current) fileInputRef.current.value = ''
+                  }}
+                  className="text-gray-4 hover:text-white text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
             <div className="flex gap-md">
+              <input
+                ref={fileInputRef}
+                type="file"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) setSelectedFile(file)
+                }}
+                accept=".pdf,.docx,.doc,.txt,.jpg,.jpeg,.png,.gif"
+                style={{ display: 'none' }}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={chatLoading}
+                className="btn btn-secondary px-md py-md text-sm disabled:opacity-50"
+                title="Adjuntar archivo"
+              >
+                📎
+              </button>
               <input
                 type="text"
                 value={chatInput}
@@ -852,7 +1278,7 @@ export default function Dashboard() {
               />
               <button
                 onClick={sendMessage}
-                disabled={chatLoading || !chatInput.trim()}
+                disabled={chatLoading || (!chatInput.trim() && !selectedFile)}
                 className="btn btn-primary px-md py-md text-sm disabled:opacity-50"
               >
                 →
