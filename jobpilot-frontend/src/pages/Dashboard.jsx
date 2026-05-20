@@ -598,6 +598,85 @@ export default function Dashboard() {
             <div className="max-w-4xl">
               <h2 className="text-xl font-bold text-white mb-lg">Empleos Recomendados</h2>
               <button className="btn btn-primary mb-lg">⟳ Actualizar</button>
+              {jobMatches && jobMatches.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
+                  {jobMatches.map((match, idx) => (
+                    <div key={idx} className="bg-black-3 border border-gray-1 rounded-lg p-lg hover:border-red transition-colors">
+                      <div className="mb-md">
+                        <h3 className="text-white font-bold text-lg">{match.job?.title}</h3>
+                        <p className="text-sm text-gray-4">{match.job?.company} • {match.job?.location}</p>
+                      </div>
+                      <p className="text-sm text-gray-4 mb-md line-clamp-2">{match.job?.description}</p>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-xs text-gray-3">Compatibilidad:</span>
+                          <div className="text-lg font-bold text-red">{Math.round(match.match_score)}%</div>
+                        </div>
+                        <a href={match.job?.url} target="_blank" rel="noopener noreferrer" className="btn btn-secondary text-sm">
+                          Ver Oferta →
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-2xl">
+                  <p className="text-gray-4 text-sm">No hay empleos disponibles. Sube tu CV para encontrar matches.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeView === 'cover' && (
+            <div className="max-w-4xl">
+              <div className="bg-black-3 border border-gray-1 rounded-lg p-lg">
+                <h2 className="text-xl font-bold text-white mb-lg">Generador de Carta de Presentación</h2>
+                <div className="space-y-lg">
+                  <div>
+                    <label className="block text-sm font-semibold text-white mb-md">Puesto Objetivo</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Developer Full Stack"
+                      className="w-full input-base bg-black border border-gray-1 text-white placeholder-gray-4 rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-white mb-md">Empresa</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Google, Mercado Libre"
+                      className="w-full input-base bg-black border border-gray-1 text-white placeholder-gray-4 rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-white mb-md">Tono Deseado</label>
+                    <select className="w-full input-base bg-black border border-gray-1 text-white rounded">
+                      <option value="formal">Formal y Profesional</option>
+                      <option value="casual">Casual y Descontracturado</option>
+                      <option value="energetic">Energético y Dinámico</option>
+                    </select>
+                  </div>
+                  <button className="btn btn-primary w-full">
+                    Generar Carta con Coach →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeView === 'applications' && (
+            <div className="max-w-4xl">
+              <div className="bg-black-3 border border-gray-1 rounded-lg p-lg">
+                <h2 className="text-xl font-bold text-white mb-lg">Seguimiento de Postulaciones</h2>
+                <div className="text-center py-2xl">
+                  <div className="text-4xl mb-md">📋</div>
+                  <p className="text-gray-4 mb-lg">Aún no has registrado postulaciones</p>
+                  <p className="text-sm text-gray-3 mb-lg">Usa esta herramienta para hacer seguimiento de tus aplicaciones y entrevistas</p>
+                  <button className="btn btn-primary">
+                    Registrar Postulación →
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

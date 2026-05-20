@@ -116,9 +116,9 @@ def chat_with_coach(user_id: int, message: str, tier: str) -> dict:
         logger.debug(f"Calling Claude API with {len(messages)} messages")
 
         # Llamar a Claude API con modelo actualizado
-        # Usando claude-3-5-sonnet que es más barato y eficiente
+        # Usando claude-sonnet-4-6 (modelo actual disponible)
         response = get_client().messages.create(
-            model="claude-3-5-sonnet-20241022",
+            model="claude-sonnet-4-6",
             max_tokens=1200,
             system=SYSTEM_PROMPT,
             messages=messages
@@ -301,7 +301,7 @@ def analyze_cv_with_claude(file_path: str) -> dict:
 No incluyas markdown, explicaciones ni nada más. Solo el JSON."""
 
         response = get_client().messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=1000,
             messages=[{
                 "role": "user",
