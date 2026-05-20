@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { userAPI, chatAPI, cvAPI, jobsAPI } from '../services/api'
 import CVEditor from '../components/CVEditor'
+import ExperienceFilter from '../components/ExperienceFilter'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -34,6 +35,9 @@ export default function Dashboard() {
   const [tempSkills, setTempSkills] = useState([])
   const [showCVEditor, setShowCVEditor] = useState(false)
   const [savingCV, setSavingCV] = useState(false)
+  const [applications, setApplications] = useState([])
+  const [selectedExperienceFilter, setSelectedExperienceFilter] = useState(null)
+  const [selectedJobsExperienceFilter, setSelectedJobsExperienceFilter] = useState(null)
   const fileInputRef = useRef()
   const cvUploadRef = useRef()
 
@@ -54,19 +58,29 @@ export default function Dashboard() {
     loadDashboard()
   }, [navigate])
 
+  useEffect(() => {
+    if (activeView === 'applications') {
+      jobsAPI.applications()
+        .then(res => setApplications(res.data?.applications || []))
+        .catch(() => setApplications([]))
+    }
+  }, [activeView])
+
   const loadDashboard = async () => {
     try {
-      const [userRes, statsRes, cvRes, jobsRes] = await Promise.all([
+      const [userRes, statsRes, cvRes, jobsRes, appsRes] = await Promise.all([
         userAPI.profile(),
         userAPI.stats(),
         cvAPI.current().catch(() => ({ data: { cv: null } })),
-        jobsAPI.matches(10).catch(() => ({ data: { matches: [] } }))
+        jobsAPI.matches(10).catch(() => ({ data: { matches: [] } })),
+        jobsAPI.applications().catch(() => ({ data: { applications: [] } }))
       ])
       setUser(userRes.data?.user)
       setStats(statsRes.data?.stats)
       setCv(cvRes.data?.cv)
       if (cvRes.data?.cv) setCvUploaded(true)
       setJobMatches(jobsRes.data?.matches || [])
+      setApplications(appsRes.data?.applications || [])
     } catch (error) {
       if (error.response?.status === 401) {
         localStorage.removeItem('access_token')
@@ -83,6 +97,15 @@ export default function Dashboard() {
     localStorage.removeItem('access_token')
     navigate('/')
     toast.success('Sesión cerrada')
+  }
+
+  const filterByExperience = (matches, filterLevel) => {
+    if (filterLevel === null) return matches
+    const userExperience = cv?.experience_years || 0
+    return matches.filter(match => {
+      if (filterLevel === 3) return userExperience >= 3
+      return userExperience >= filterLevel
+    })
   }
 
   const completeOnboarding = () => {
@@ -703,9 +726,18 @@ export default function Dashboard() {
                   </button>
                 </div>
 
+                {jobMatches && jobMatches.length > 0 && (
+                  <div className="mb-lg">
+                    <ExperienceFilter
+                      selected={selectedExperienceFilter}
+                      onChange={setSelectedExperienceFilter}
+                    />
+                  </div>
+                )}
+
                 {jobMatches && jobMatches.length > 0 ? (
                   <div className="space-y-md">
-                    {jobMatches.slice(0, 3).map((match, idx) => (
+                    {filterByExperience(jobMatches, selectedExperienceFilter).slice(0, 3).map((match, idx) => (
                       <Link
                         key={idx}
                         to={`/jobs/${match.job_id}`}
@@ -997,9 +1029,17 @@ export default function Dashboard() {
             <div className="max-w-4xl">
               <h2 className="text-xl font-bold text-white mb-lg">Empleos Recomendados</h2>
               <button onClick={refreshJobMatches} className="btn btn-primary mb-lg">⟳ Actualizar</button>
+              {jobMatches && jobMatches.length > 0 && (
+                <div className="mb-lg">
+                  <ExperienceFilter
+                    selected={selectedJobsExperienceFilter}
+                    onChange={setSelectedJobsExperienceFilter}
+                  />
+                </div>
+              )}
               {jobMatches && jobMatches.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
-                  {jobMatches.map((match, idx) => (
+                  {filterByExperience(jobMatches, selectedJobsExperienceFilter).map((match, idx) => (
                     <div key={idx} className="bg-black-3 border border-gray-1 rounded-lg p-lg hover:border-red transition-colors">
                       <div className="mb-md">
                         <h3 className="text-white font-bold text-lg">{match.job?.title}</h3>
@@ -1011,9 +1051,9 @@ export default function Dashboard() {
                           <span className="text-xs text-gray-3">Compatibilidad:</span>
                           <div className="text-lg font-bold text-red">{Math.round(match.match_score)}%</div>
                         </div>
-                        <a href={match.job?.url} target="_blank" rel="noopener noreferrer" className="btn btn-secondary text-sm">
+                        <Link to={`/jobs/${match.job_id}`} state={{ match }} className="btn btn-secondary text-sm">
                           Ver Oferta →
-                        </a>
+                        </Link>
                       </div>
                     </div>
                   ))}
@@ -1099,14 +1139,44 @@ export default function Dashboard() {
             <div className="max-w-4xl">
               <div className="bg-black-3 border border-gray-1 rounded-lg p-lg">
                 <h2 className="text-xl font-bold text-white mb-lg">Seguimiento de Postulaciones</h2>
-                <div className="text-center py-2xl">
-                  <div className="text-4xl mb-md">📋</div>
-                  <p className="text-gray-4 mb-lg">Aún no has registrado postulaciones</p>
-                  <p className="text-sm text-gray-3 mb-lg">Usa esta herramienta para hacer seguimiento de tus aplicaciones y entrevistas</p>
-                  <button className="btn btn-primary">
-                    Registrar Postulación →
-                  </button>
-                </div>
+                {applications && applications.length > 0 ? (
+                  <div className="space-y-md">
+                    {applications.map((app) => (
+                      <div key={app.id} className="border border-gray-1 rounded-lg p-md bg-black hover:bg-black-2 transition">
+                        <div className="flex justify-between items-start mb-md">
+                          <div className="flex-1">
+                            <Link to={`/jobs/${app.job_id}`} className="text-lg font-semibold text-blue-3 hover:text-blue-2">
+                              Empleo ID: {app.job_id}
+                            </Link>
+                          </div>
+                          <span className={`px-md py-sm rounded text-sm font-medium ${
+                            app.status === 'pending' ? 'bg-blue-1 text-blue-3' :
+                            app.status === 'accepted' ? 'bg-green-1 text-green-3' :
+                            app.status === 'rejected' ? 'bg-red-1 text-red-3' :
+                            'bg-gray-1 text-gray-3'
+                          }`}>
+                            {app.status === 'pending' ? 'Pendiente' :
+                             app.status === 'accepted' ? 'Aceptada' :
+                             app.status === 'rejected' ? 'Rechazada' :
+                             app.status}
+                          </span>
+                        </div>
+                        <p className="text-gray-4 text-sm">
+                          Aplicada: {new Date(app.applied_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-2xl">
+                    <div className="text-4xl mb-md">📋</div>
+                    <p className="text-gray-4 mb-lg">Aún no has registrado postulaciones</p>
+                    <p className="text-sm text-gray-3 mb-lg">Usa esta herramienta para hacer seguimiento de tus aplicaciones y entrevistas</p>
+                    <button className="btn btn-primary">
+                      Registrar Postulación →
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1116,19 +1186,27 @@ export default function Dashboard() {
         {showAllJobs && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-lg">
             <div className="bg-black-3 border border-gray-1 rounded-lg max-w-2xl w-full max-h-96 overflow-y-auto">
-              <div className="sticky top-0 bg-black-3 border-b border-gray-1 p-lg flex items-center justify-between">
-                <h2 className="text-xl font-bold text-white">Todos los Empleos Recomendados</h2>
-                <button
-                  onClick={() => setShowAllJobs(false)}
-                  className="text-gray-4 hover:text-white text-2xl"
-                >
-                  ×
-                </button>
+              <div className="sticky top-0 bg-black-3 border-b border-gray-1 p-lg space-y-md">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-white">Todos los Empleos Recomendados</h2>
+                  <button
+                    onClick={() => setShowAllJobs(false)}
+                    className="text-gray-4 hover:text-white text-2xl"
+                  >
+                    ×
+                  </button>
+                </div>
+                {jobMatches && jobMatches.length > 0 && (
+                  <ExperienceFilter
+                    selected={selectedJobsExperienceFilter}
+                    onChange={setSelectedJobsExperienceFilter}
+                  />
+                )}
               </div>
 
               <div className="p-lg space-y-md">
                 {jobMatches && jobMatches.length > 0 ? (
-                  jobMatches.map((match, idx) => (
+                  filterByExperience(jobMatches, selectedJobsExperienceFilter).map((match, idx) => (
                     <Link
                       key={idx}
                       to={`/jobs/${match.job_id}`}

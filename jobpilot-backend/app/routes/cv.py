@@ -165,3 +165,42 @@ def delete_cv(cv_id):
         logger.error(f"Delete CV error: {str(e)}")
         db.session.rollback()
         return jsonify({'error': 'Internal server error'}), 500
+
+@bp.route('/update/<int:cv_id>', methods=['PUT'])
+@jwt_required()
+def update_cv(cv_id):
+    """Actualiza campos editables del CV"""
+    try:
+        user_id = int(get_jwt_identity())
+        cv = CV.query.filter_by(id=cv_id, user_id=user_id).first()
+
+        if not cv:
+            return jsonify({'error': 'CV not found'}), 404
+
+        data = request.get_json()
+
+        if 'summary' in data:
+            cv.summary = data['summary']
+        if 'skills' in data:
+            cv.skills = data['skills']
+        if 'experience' in data:
+            cv.experience = data['experience']
+        if 'education' in data:
+            cv.education = data['education']
+        if 'certifications' in data:
+            cv.certifications = data['certifications']
+        if 'experience_years' in data:
+            cv.experience_years = data['experience_years']
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'CV updated successfully',
+            'cv': cv.to_dict()
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Update CV error: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': 'Internal server error'}), 500
