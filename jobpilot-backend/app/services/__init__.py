@@ -75,7 +75,7 @@ Responde siempre en español a menos que el usuario hable otro idioma.
 Sé conciso pero útil. Máximo 2-3 párrafos antes de listar puntos.
 Proporciona ejemplos concretos y accionables."""
 
-def chat_with_coach(user_id: int, message: str, tier: str) -> dict:
+def chat_with_coach(user_id: int, message: str, tier: str, context: dict = None) -> dict:
     """
     Envía un mensaje al Coach IA y retorna respuesta + costos
 
@@ -83,12 +83,21 @@ def chat_with_coach(user_id: int, message: str, tier: str) -> dict:
         user_id: ID del usuario
         message: Mensaje del usuario
         tier: Tier del usuario (free, pro, premium)
+        context: Contexto adicional (CV data, current page, etc)
 
     Returns:
         dict con: response, tokens, cost
     """
     try:
         logger.info(f"💬 Chat request from user {user_id} (tier: {tier})")
+
+        # Construir contexto del usuario si fue proporcionado
+        user_context = ""
+        if context:
+            if context.get('cv_skills'):
+                user_context += f"\n\nUSUARIO CV DATA:\n- Skills: {', '.join(context['cv_skills'][:10])}{'...' if len(context['cv_skills']) > 10 else ''}\n- Experience: {context.get('cv_experience', 0)} years\n- Job titles: {', '.join(context.get('cv_jobs', [])[:3])}"
+            if context.get('current_page'):
+                user_context += f"\n- Currently viewing: {context['current_page']}"
 
         # Obtener historial previo (últimos 10 chats para contexto)
         history = ChatHistory.query.filter_by(user_id=user_id)\
@@ -107,10 +116,14 @@ def chat_with_coach(user_id: int, message: str, tier: str) -> dict:
                 "content": chat.message_ai
             })
 
-        # Agregar mensaje actual
+        # Agregar contexto y mensaje actual
+        full_message = message
+        if user_context:
+            full_message = f"{user_context}\n\nUSUARIO PREGUNTA: {message}"
+
         messages.append({
             "role": "user",
-            "content": message
+            "content": full_message
         })
 
         logger.debug(f"Calling Claude API with {len(messages)} messages")

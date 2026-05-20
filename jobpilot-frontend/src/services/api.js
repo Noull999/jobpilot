@@ -39,7 +39,13 @@ export const authAPI = {
 
 // Chat endpoints
 export const chatAPI = {
-  send: (message) => api.post('/chat/send', { message }),
+  send: (message, currentPage = null) => {
+    const payload = { message }
+    if (currentPage) {
+      payload.current_page = currentPage
+    }
+    return api.post('/chat/send', payload)
+  },
   history: (limit = 20) => api.get(`/chat/history?limit=${limit}`),
   usage: () => api.get('/chat/usage'),
 }

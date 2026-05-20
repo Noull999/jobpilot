@@ -119,7 +119,7 @@ export default function Dashboard() {
     setChatLoading(true)
 
     try {
-      const res = await chatAPI.send(chatInput)
+      const res = await chatAPI.send(chatInput, activeView)
       const coachMessage = { text: res.data?.response || 'Entendido', sender: 'coach' }
       setChatMessages((prev) => [...prev, coachMessage])
     } catch (error) {

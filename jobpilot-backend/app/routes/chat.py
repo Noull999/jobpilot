@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.services import chat_with_coach, get_chat_history, get_monthly_usage
-from app.models import User
+from app.models import User, CV
 import logging
 from datetime import datetime
 
@@ -36,9 +36,22 @@ def send_message():
                     'error': 'Free tier limit reached',
                     'message': f"You've used all {usage['chats_limit']} free chats this month. Upgrade to Pro for unlimited access."
                 }), 429
-        
-        # Llamar al servicio
-        result = chat_with_coach(user_id, message, user.tier)
+
+        # Obtener contexto del CV si existe
+        context = {}
+        cv = CV.query.filter_by(user_id=user_id).order_by(CV.uploaded_at.desc()).first()
+        if cv:
+            context['cv_skills'] = cv.skills or []
+            context['cv_experience'] = cv.experience_years or 0
+            context['cv_jobs'] = cv.job_titles or []
+
+        # Obtener página actual si fue enviada
+        current_page = data.get('current_page')
+        if current_page:
+            context['current_page'] = current_page
+
+        # Llamar al servicio con contexto
+        result = chat_with_coach(user_id, message, user.tier, context)
         
         return jsonify({
             'success': True,
