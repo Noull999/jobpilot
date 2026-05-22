@@ -7,12 +7,13 @@ def utc_now():
 
 class User(db.Model):
     __tablename__ = 'users'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     name = db.Column(db.String(255))
     tier = db.Column(db.String(50), default='free')  # free, pro, premium
+    email_verified = db.Column(db.Boolean, default=False, index=True)
     created_at = db.Column(db.DateTime, default=utc_now)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
     
@@ -98,6 +99,13 @@ class CV(db.Model):
     uploaded_at = db.Column(db.DateTime, default=utc_now)
     analyzed_at = db.Column(db.DateTime)
 
+    # Campos editables estructurados
+    summary = db.Column(db.Text)  # Resumen profesional
+    experience = db.Column(db.JSON)  # [{position, company, start_date, end_date, description}]
+    education = db.Column(db.JSON)  # [{school, degree, field, graduation_year}]
+    certifications = db.Column(db.JSON)  # [{title, issuer, issue_date, expiration_date}]
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -107,8 +115,13 @@ class CV(db.Model):
             'skills': self.skills or [],
             'experience_years': self.experience_years,
             'job_titles': self.job_titles or [],
+            'summary': self.summary,
+            'experience': self.experience or [],
+            'education': self.education or [],
+            'certifications': self.certifications or [],
             'uploaded_at': self.uploaded_at.isoformat(),
-            'analyzed_at': self.analyzed_at.isoformat() if self.analyzed_at else None
+            'analyzed_at': self.analyzed_at.isoformat() if self.analyzed_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
 class Job(db.Model):
@@ -116,18 +129,18 @@ class Job(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     external_id = db.Column(db.String(255), unique=True)  # ID from job portal
-    title = db.Column(db.String(255), nullable=False)
-    company = db.Column(db.String(255), nullable=False)
-    location = db.Column(db.String(255))
+    title = db.Column(db.String(255), nullable=False, index=True)
+    company = db.Column(db.String(255), nullable=False, index=True)
+    location = db.Column(db.String(255), index=True)
     description = db.Column(db.Text)
     requirements = db.Column(db.JSON)  # Lista de skills requeridos
     salary_min = db.Column(db.Integer)
     salary_max = db.Column(db.Integer)
-    job_type = db.Column(db.String(50))  # Full-time, Part-time, Contract
+    job_type = db.Column(db.String(50), index=True)  # Full-time, Part-time, Contract
     posted_at = db.Column(db.DateTime)
-    source = db.Column(db.String(100))  # computrabajo, linkedin, etc
+    source = db.Column(db.String(100), index=True)  # computrabajo, linkedin, etc
     url = db.Column(db.String(500))
-    created_at = db.Column(db.DateTime, default=utc_now)
+    created_at = db.Column(db.DateTime, default=utc_now, index=True)
 
     def to_dict(self):
         return {
@@ -144,29 +157,66 @@ class Job(db.Model):
             'url': self.url
         }
 
+class Application(db.Model):
+    __tablename__ = 'applications'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    job_id = db.Column(db.Integer, db.ForeignKey('jobs.id'), nullable=False, index=True)
+    cv_id = db.Column(db.Integer, db.ForeignKey('cvs.id'), nullable=False, index=True)
+    status = db.Column(db.String(50), default='pending', index=True)  # pending, viewed, rejected, accepted
+    cover_letter = db.Column(db.Text)
+    applied_at = db.Column(db.DateTime, default=utc_now, index=True)
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
+
+    # Relación para evitar N+1 queries
+    job = db.relationship('Job', lazy='joined')
+
+    def to_dict(self, include_job=True):
+        """Evitar N+1 queries usando la relación lazy-loaded"""
+        result = {
+            'id': self.id,
+            'user_id': self.user_id,
+            'job_id': self.job_id,
+            'cv_id': self.cv_id,
+            'status': self.status,
+            'cover_letter': self.cover_letter,
+            'applied_at': self.applied_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+        }
+        if include_job and self.job:
+            result['job'] = self.job.to_dict()
+        return result
+
 class JobMatch(db.Model):
     __tablename__ = 'job_matches'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    job_id = db.Column(db.Integer, db.ForeignKey('jobs.id'), nullable=False)
-    cv_id = db.Column(db.Integer, db.ForeignKey('cvs.id'), nullable=False)
-    match_score = db.Column(db.Float)  # 0-100
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    job_id = db.Column(db.Integer, db.ForeignKey('jobs.id'), nullable=False, index=True)
+    cv_id = db.Column(db.Integer, db.ForeignKey('cvs.id'), nullable=False, index=True)
+    match_score = db.Column(db.Float, index=True)  # 0-100
     skills_matched = db.Column(db.JSON)
     skills_missing = db.Column(db.JSON)
     match_reason = db.Column(db.Text)  # Explicación del match
     created_at = db.Column(db.DateTime, default=utc_now, index=True)
 
-    def to_dict(self):
-        job = Job.query.get(self.job_id)
-        return {
+    # Relación para evitar N+1 queries
+    job = db.relationship('Job', lazy='joined')
+
+    def to_dict(self, include_job=True):
+        """Evitar N+1 queries usando la relación lazy-loaded"""
+        result = {
             'id': self.id,
-            'job': job.to_dict() if job else None,
+            'job_id': self.job_id,
             'match_score': self.match_score,
             'skills_matched': self.skills_matched or [],
             'skills_missing': self.skills_missing or [],
             'match_reason': self.match_reason
         }
+        if include_job and self.job:
+            result['job'] = self.job.to_dict()
+        return result
 
 class NotificationPreference(db.Model):
     __tablename__ = 'notification_preferences'
@@ -190,3 +240,21 @@ class NotificationPreference(db.Model):
             'min_match_score': self.min_match_score,
             'last_sent': self.last_sent.isoformat() if self.last_sent else None
         }
+
+class TokenBlacklist(db.Model):
+    __tablename__ = 'token_blacklist'
+
+    id = db.Column(db.Integer, primary_key=True)
+    jti = db.Column(db.String(36), unique=True, nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=utc_now, index=True)
+
+class EmailVerificationToken(db.Model):
+    __tablename__ = 'email_verification_tokens'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    token = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=utc_now, index=True)
+    expires_at = db.Column(db.DateTime, nullable=False)  # 24 horas
+
+    user = db.relationship('User', backref='verification_tokens')

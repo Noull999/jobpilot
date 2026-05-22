@@ -2,6 +2,8 @@ Flask==3.0.0
 Flask-CORS==4.0.0
 Flask-SQLAlchemy==3.1.1
 Flask-JWT-Extended==4.5.3
+Flask-Limiter==3.5.0
+Flask-WTF==1.2.1
 python-dotenv==1.0.0
 anthropic==0.103.1
 stripe==5.4.0
@@ -9,7 +11,8 @@ PyJWT==2.12.1
 bcrypt==4.1.2
 psycopg2-binary==2.9.10
 requests==2.31.0
-pydantic>=2.0.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
 gunicorn==21.2.0
 python-dateutil==2.8.2
 APScheduler==3.10.4
@@ -18,6 +21,9 @@ selenium==4.15.2
 Flask-Mail==0.9.1
 Jinja2==3.1.2
 python-multipart==0.0.6
-jobspy==0.2.17
+jobspy==0.31.0
 pdfplumber==0.10.3
 python-docx==0.8.11
+applypilot>=0.3.0
+litellm>=1.0.0
+werkzeug==3.0.0
