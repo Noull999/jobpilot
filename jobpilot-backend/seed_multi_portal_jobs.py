@@ -31,7 +31,7 @@ def create_sample_jobs():
                 'job_type': 'Remote',
                 'source': 'remotek',
                 'external_id': 'remotek_001',
-                'url': 'https://remoteok.io/remote-jobs/python'
+                'url': 'https://remoteok.io/remote-jobs/10012345'
             },
             {
                 'title': 'Full Stack JavaScript Developer',
@@ -44,7 +44,7 @@ def create_sample_jobs():
                 'job_type': 'Remote',
                 'source': 'remotek',
                 'external_id': 'remotek_002',
-                'url': 'https://remoteok.io/remote-jobs/javascript'
+                'url': 'https://remoteok.io/remote-jobs/10012346'
             },
             {
                 'title': 'DevOps Engineer',
@@ -57,7 +57,7 @@ def create_sample_jobs():
                 'job_type': 'Remote',
                 'source': 'remotek',
                 'external_id': 'remotek_003',
-                'url': 'https://remoteok.io/remote-jobs/devops'
+                'url': 'https://remoteok.io/remote-jobs/10012347'
             }
         ]
 
@@ -74,7 +74,7 @@ def create_sample_jobs():
                 'job_type': 'Full-time',
                 'source': 'github',
                 'external_id': 'github_001',
-                'url': 'https://github.com/jobs/golang'
+                'url': 'https://github.com/jobs/123456789'
             },
             {
                 'title': 'Frontend React Specialist',
@@ -87,7 +87,7 @@ def create_sample_jobs():
                 'job_type': 'Full-time',
                 'source': 'github',
                 'external_id': 'github_002',
-                'url': 'https://github.com/jobs/react'
+                'url': 'https://github.com/jobs/123456790'
             }
         ]
 
@@ -104,7 +104,7 @@ def create_sample_jobs():
                 'job_type': 'Full-time',
                 'source': 'indeed',
                 'external_id': 'indeed_001',
-                'url': 'https://indeed.com/jobs?q=python&l=Chile'
+                'url': 'https://cl.indeed.com/rc/clk?jk=987654321'
             },
             {
                 'title': 'Developer JavaScript/React',
@@ -117,7 +117,7 @@ def create_sample_jobs():
                 'job_type': 'Full-time',
                 'source': 'indeed',
                 'external_id': 'indeed_002',
-                'url': 'https://indeed.com/jobs?q=react&l=Chile'
+                'url': 'https://cl.indeed.com/rc/clk?jk=987654322'
             },
             {
                 'title': 'QA Automation Engineer',
@@ -130,7 +130,7 @@ def create_sample_jobs():
                 'job_type': 'Full-time',
                 'source': 'indeed',
                 'external_id': 'indeed_003',
-                'url': 'https://indeed.com/jobs?q=qa&l=Chile'
+                'url': 'https://cl.indeed.com/rc/clk?jk=987654323'
             }
         ]
 

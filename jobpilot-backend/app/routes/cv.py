@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models import User, CV
 from app.services import analyze_cv_with_claude
-from app import db
+from app import db, limiter
 import logging
 import os
 from werkzeug.utils import secure_filename
@@ -12,12 +12,14 @@ logger = logging.getLogger(__name__)
 
 UPLOAD_FOLDER = 'uploads/cvs'
 ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'txt'}
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @bp.route('/upload', methods=['POST'])
 @jwt_required()
+@limiter.limit("5 per hour")
 def upload_cv():
     """Sube y analiza CV del usuario"""
     logger.info("=" * 60)
@@ -35,7 +37,7 @@ def upload_cv():
             logger.warning(f"❌ Usuario {user_id} no encontrado en BD")
             return jsonify({'error': 'User not found'}), 404
 
-        logger.info(f"✅ Usuario encontrado: {user.email}")
+        logger.info(f"✅ Usuario encontrado: user_id={user.id}")
 
         # Paso 2: Validar archivo
         logger.info("📍 Paso 2: Validando archivo...")
@@ -55,6 +57,13 @@ def upload_cv():
             return jsonify({'error': 'File type not allowed. Allowed: pdf, doc, docx, txt'}), 400
 
         logger.info(f"✅ Tipo de archivo válido")
+
+        # Validar tamaño de archivo
+        if 'content-length' in request.headers:
+            content_length = int(request.headers['content-length'])
+            if content_length > MAX_FILE_SIZE:
+                logger.warning(f"❌ Archivo demasiado grande: {content_length} bytes (máximo {MAX_FILE_SIZE})")
+                return jsonify({'error': f'File too large. Maximum size: 10MB'}), 413
 
         # Paso 3: Crear carpeta y guardar archivo
         logger.info("📍 Paso 3: Guardando archivo en disco...")

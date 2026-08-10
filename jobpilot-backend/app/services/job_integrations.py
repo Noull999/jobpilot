@@ -2,6 +2,7 @@
 import logging
 from typing import List, Dict
 from app.services.scrapers import (
+    JSearchScraper,
     ComputrabajoScraper,
     TrabajandoScraper,
     LaborumScraper,
@@ -28,6 +29,7 @@ class PortalIntegration:
 
 
 _portal_integrations = {
+    'jsearch': PortalIntegration(JSearchScraper()),
     'computrabajo': PortalIntegration(ComputrabajoScraper()),
     'trabajando': PortalIntegration(TrabajandoScraper()),
     'laborum': PortalIntegration(LaborumScraper()),

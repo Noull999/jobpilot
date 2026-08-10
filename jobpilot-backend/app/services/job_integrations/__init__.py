@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 
 # Import all portal integrations
 from .base import JobPortalIntegration
+from .jsearch import JsearchIntegration
 from .remotek import RemoteOkIntegration
 from .github import GitHubJobsIntegration
 from .indeed import IndeedIntegration
@@ -26,6 +27,7 @@ from .other_portals import (
 
 # Dictionary of all available integrations
 AVAILABLE_INTEGRATIONS = {
+    'jsearch': JsearchIntegration,
     'remotek': RemoteOkIntegration,
     'github': GitHubJobsIntegration,
     'indeed': IndeedIntegration,

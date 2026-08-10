@@ -1,0 +1,31 @@
+# LiteLLM Configuration for ApplyPilot
+# This proxy allows ApplyPilot to use Claude via Anthropic API
+# with Gemini as fallback
+
+model_list:
+  # Primary: Claude Opus (best for cover letters and resume tailoring)
+  - model_name: claude-opus
+    litellm_params:
+      model: claude-opus-4-20250514
+      api_key: "os.environ/ANTHROPIC_API_KEY"
+
+  # Fallback: Gemini (free tier)
+  - model_name: gemini
+    litellm_params:
+      model: gemini-2.0-flash
+      api_key: "os.environ/GEMINI_API_KEY"
+
+# Proxy settings
+num_workers: 1
+timeout: 600
+debug: false
+port: 4000
+host: "0.0.0.0"
+
+# Authentication
+master_key: "sk-applypilot-default-master-key"
+
+# Logging
+logging:
+  - "stderr"
+  - "file"

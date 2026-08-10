@@ -98,6 +98,9 @@ def chat_with_coach(user_id: int, message: str, tier: str, context: dict = None)
                 user_context += f"\n\nUSUARIO CV DATA:\n- Skills: {', '.join(context['cv_skills'][:10])}{'...' if len(context['cv_skills']) > 10 else ''}\n- Experience: {context.get('cv_experience', 0)} years\n- Job titles: {', '.join(context.get('cv_jobs', [])[:3])}"
             if context.get('current_page'):
                 user_context += f"\n- Currently viewing: {context['current_page']}"
+            if context.get('uploaded_file_content'):
+                file_content = context['uploaded_file_content'][:2000]  # Limit to 2000 chars
+                user_context += f"\n\nUPLOADED FILE CONTENT:\n{file_content}"
 
         # Obtener historial previo (últimos 10 chats para contexto)
         history = ChatHistory.query.filter_by(user_id=user_id)\
